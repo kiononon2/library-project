@@ -2,6 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"libraryProject/entities"
@@ -14,12 +18,32 @@ var db *gorm.DB
 
 func initDB() {
 	var err error
-	db, err = gorm.Open(postgres.Open("user=postgres password=postgres dbname=gorillaLibraryProjectDB host=localhost port=5433 sslmode=disable"), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open("user=postgres password=qwerty dbname=goDB host=db port=5432 sslmode=disable"), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	db.AutoMigrate(&entities.User{}, &entities.Book{}, &entities.Author{}, &entities.Category{}, &entities.Loan{}, &entities.Review{})
 }
+
+func makeMigration() {
+	dsn := "postgres://postgres:qwerty@db:5432/goDB?sslmode=disable"
+	m, err := migrate.New("file:///app/db/migrations", dsn)
+	if err != nil {
+		panic(err)
+	}
+	m.Up()
+
+}
+func downMigration() {
+	dsn := "postgres://postgres:qwerty@db:5432/goDB?sslmode=disable"
+	m, err := migrate.New("file:///app/db/migrations", dsn)
+	if err != nil {
+		panic(err)
+	}
+	m.Down()
+
+}
+
 func main() {
 	initDB()
 	defer func() {
@@ -29,6 +53,8 @@ func main() {
 		}
 		s.Close()
 	}()
+
+	makeMigration()
 
 	http.HandleFunc("/book", bookHandler)
 	http.HandleFunc("/user", userHandler)
